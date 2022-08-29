@@ -1,0 +1,62 @@
+version: "3.7"
+services:
+
+  nginx:
+    image: nginx:alpine
+    container_name: amjp_laravel_nginx_container
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./www:/var/www
+      - ./nginx:/etc/nginx/conf.d/
+    networks:
+      - amjp_laravel_network
+  
+  db:
+    image: mysql:8.0
+    container_name: amjp_laravel_db_container
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: laravel_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: password
+      MYSQL_USER: user
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - amjp_laravel_network
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: amjp_laravel_pma_container
+    ports:
+      - 8306:80
+    environment:
+      UPLOAD_LIMIT: 100M
+    links:
+      - db:db
+    depends_on:
+      - db
+    networks:
+      - amjp_laravel_network
+
+  app:
+    image: amjp_laravel_app
+    container_name: amjp_laravel_app_container
+    build:
+      args:
+        user: alex
+        uid: 1000
+      context: ./
+      dockerfile: ./php/Dockerfile
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./www/:/var/www
+    networks:
+      - amjp_laravel_network
+
+networks:
+  amjp_laravel_network:
+    driver: bridge
